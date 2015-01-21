@@ -27,14 +27,20 @@ RUN echo "deb http://www.rabbitmq.com/debian/ testing main" >>/etc/apt/sources.l
 ENV KEY_URL https://www.rabbitmq.com/rabbitmq-signing-key-public.asc
 RUN curl $KEY_URL -o /tmp/rabbitmq-signing-key-public.asc
 RUN apt-key add /tmp/rabbitmq-signing-key-public.asc
+RUN apt-get update
 RUN apt-get -y -q install rabbitmq-server && apt-get clean
 
+# Add our up script
+RUN mkdir /app
+ADD . /app
+WORKDIR /app
 
-# Expose RabbitMQ port
+
+# Expose ports for RabbitMQ and RabbitMQ Management
 #
-EXPOSE 5672
+EXPOSE 5672 15672
 
 
 # Start RabbitMQ
 #
-ENTRYPOINT ["rabbitmq-server"]
+ENTRYPOINT ["./rabbit-up.sh"]
