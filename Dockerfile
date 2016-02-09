@@ -1,46 +1,36 @@
-# Based on
-# https://github.com/mweibel/redis-docker/blob/master/Dockerfile
-FROM       	ubuntu:12.04
+# Build a docker image for nginx on Ubuntu 14.04LTS.
+# Use phusion/baseimage as base image. To make your builds
+# reproducible, make sure you lock down to a specific version, not
+# to `latest`! See
+# https://github.com/phusion/baseimage-docker/blob/master/Changelog.md
+# for a list of version numbers.
+FROM phusion/baseimage:0.9.17
 MAINTAINER  pitrho
 
+# Use baseimage-docker's init system.
+CMD ["/sbin/my_init"]
 
 # Set up the environment
-#
 ENV DEBIAN_FRONTEND noninteractive
 
-
 # Prevent apt from starting services right after the installation
-#
 RUN echo "#!/bin/sh\nexit 101" > /usr/sbin/policy-rc.d; chmod +x /usr/sbin/policy-rc.d
 
-
-# Update packages
-#
-RUN echo "deb http://archive.ubuntu.com/ubuntu precise main universe" > /etc/apt/sources.list
-RUN apt-get update && apt-get upgrade -y && apt-get clean
-RUN apt-get install -y -q curl && apt-get clean
-
+# Install utilities
+RUN apt-get update && apt-get install wget
 
 # Install RabbitMQ
-#
-RUN echo "deb http://www.rabbitmq.com/debian/ testing main" >>/etc/apt/sources.list
-ENV KEY_URL https://www.rabbitmq.com/rabbitmq-signing-key-public.asc
-RUN curl $KEY_URL -o /tmp/rabbitmq-signing-key-public.asc
-RUN apt-key add /tmp/rabbitmq-signing-key-public.asc
-RUN apt-get update
-RUN apt-get -y -q install rabbitmq-server && apt-get clean
+RUN wget -qO - https://www.rabbitmq.com/rabbitmq-signing-key-public.asc | apt-key add -
+RUN echo "deb http://www.rabbitmq.com/debian/ testing main" >> /etc/apt/sources.list
+RUN apt-get update && apt-get -y -q install rabbitmq-server
 
-# Add our up script
-RUN mkdir /app
-ADD . /app
-WORKDIR /app
-
+# Define our service
+RUN mkdir /etc/service/rabbitmq
+COPY run.sh /etc/service/rabbitmq/run
+COPY rabbitmq.config /etc/rabbitmq/rabbitmq.config
 
 # Expose ports for RabbitMQ and RabbitMQ Management
-#
 EXPOSE 5672 15672
 
-
-# Start RabbitMQ
-#
-ENTRYPOINT ["./rabbit-up.sh"]
+# Clean up APT when done.
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
