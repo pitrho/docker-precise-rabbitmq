@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export HOME=$HOME
+
 # Set username and password in config
 : =${RABBITMQ_USER:='guest'}
 : =${RABBITMQ_PASSWORD:='guest'}
